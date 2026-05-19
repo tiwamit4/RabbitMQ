@@ -1,0 +1,31 @@
+## receive logs 
+
+""" This script receives log messages from a fanout exchange named 'logs'. 
+The messages are received by a queue that is bound to the exchange. 
+"""
+
+import pika
+
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+channel.exchange_declare(exchange='logs', exchange_type='fanout')
+
+result = channel.queue_declare(queue='', exclusive=True)
+queue_name = result.method.queue
+
+print(f" [*] Created queue {queue_name} and bound it to exchange 'logs'")
+
+# bind the queue to the exchange
+channel.queue_bind(exchange='logs', queue=queue_name)
+
+print(' [*] Waiting for logs. To exit press CTRL+C')
+
+def callback(ch, method, properties, body):
+    print(f" [x] {body}")
+
+channel.basic_consume(
+    queue=queue_name, on_message_callback=callback, auto_ack=True)
+
+channel.start_consuming()
